@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Groovy Flipboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@500;600&family=Righteous&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f4e4c1;
+    --cream-2: #ead3a3;
+    --brown: #3b2414;
+    --brown-2: #5a3620;
+    --rust: #c8501e;
+    --orange: #e8822a;
+    --mustard: #e3a92b;
+    --olive: #7c8a2e;
+    --teal: #2f7f7a;
+    --ink: #2a1a0e;
+    --tile: #1b1714;
+    --tile-2: #2a2420;
+    --glyph: #f3ead8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background-color: #4a2c18;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.10) 0 2px, transparent 2px 7px, rgba(255,255,255,.03) 7px 9px, transparent 9px 23px),
+      repeating-linear-gradient(90deg, #4a2c18 0 180px, #523119 180px 182px, #4a2c18 182px 360px),
+      linear-gradient(180deg, #5a361e, #3d2312);
+    color: var(--cream);
+    font-family: "DM Sans", system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 70s stripes */
+  .stripes { height: 54px; background: linear-gradient(180deg,
+      var(--mustard) 0 20%, var(--orange) 20% 40%, var(--rust) 40% 60%, #8f2f17 60% 80%, var(--brown) 80% 100%);
+    box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  .stripes.bottom { transform: scaleY(-1); margin-top: 48px; }
+
+  nav { display: flex; justify-content: center; gap: 10px; padding: 16px; flex-wrap: wrap; }
+  nav a {
+    font-family: Righteous, sans-serif; text-decoration: none; color: var(--cream);
+    padding: 9px 20px; border-radius: 999px; border: 2px solid rgba(244,228,193,.35); font-size: 15px; letter-spacing: .04em;
+  }
+  nav a.on { background: var(--mustard); color: var(--ink); border-color: var(--mustard); }
+  nav a:hover { border-color: var(--mustard); }
+
+  h1 {
+    font-family: Shrikhand, serif; font-weight: 400; text-align: center; margin: 6px 16px 0;
+    font-size: clamp(40px, 8vw, 96px); line-height: 1; color: var(--cream);
+    text-shadow: 3px 3px 0 var(--mustard), 6px 6px 0 var(--orange), 9px 9px 0 var(--rust), 12px 12px 0 #8f2f17, 15px 15px 18px rgba(0,0,0,.4);
+    transform: rotate(-3deg);
+    width: fit-content; max-width: calc(100% - 32px); margin-left: auto; margin-right: auto;
+    padding: 0 12px 10px; overflow-wrap: anywhere;
+  }
+  h1 .ln {
+    display: block; outline: none; cursor: text; border-radius: 14px; padding: 0 10px;
+    transition: background .2s; line-height: 1.02;
+  }
+  h1 .ln:empty { display: none; }
+  h1 .ln:hover { background: rgba(244,228,193,.06); }
+  h1 .ln:focus { background: rgba(244,228,193,.10); box-shadow: 0 0 0 2px rgba(227,169,43,.6); }
+  .title-row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-bottom: 14px; }
+  .title-row label { width: 100%; }
+  .title-row label { font-size: 13px; color: #6b4a2e; white-space: nowrap; }
+  .title-row input {
+    flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 3px solid var(--brown-2);
+    background: #fffaf0; color: var(--rust); font-family: Shrikhand, serif; font-size: 20px;
+  }
+  .title-row input:focus { outline: none; border-color: var(--orange); }
+  .tag { text-align: center; font-family: Righteous, sans-serif; color: var(--cream-2); margin: 26px 16px 28px; letter-spacing: .14em; font-size: 14px; text-transform: uppercase; }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+
+  /* ---------- Board ---------- */
+  .housing {
+    position: relative; margin: 0 auto; width: fit-content; max-width: 100%;
+    padding: clamp(10px, 2.2vw, 28px);
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.12), transparent 30%, rgba(0,0,0,.25)),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 1px, transparent 1px 5px),
+      linear-gradient(180deg, #a5671f, #7a4614);
+    box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,220,160,.4), inset 0 -4px 0 rgba(0,0,0,.35);
+  }
+  .housing::before { /* chrome trim */
+    content: ""; position: absolute; inset: 8px; border-radius: 16px; pointer-events: none;
+    border: 2px solid rgba(255,230,190,.25); box-shadow: inset 0 0 0 1px rgba(0,0,0,.3);
+  }
+  .badge {
+    position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%);
+    background: var(--cream); color: var(--ink); font-family: Righteous, sans-serif; font-size: 12px;
+    letter-spacing: .3em; padding: 6px 18px; border-radius: 999px; box-shadow: 0 4px 10px rgba(0,0,0,.4);
+    white-space: nowrap;
+  }
+  .board {
+    display: grid; gap: var(--gap); padding: var(--gap);
+    grid-template-columns: repeat(22, var(--tw));
+    background: #0e0b09; border-radius: 10px;
+    box-shadow: inset 0 4px 14px rgba(0,0,0,.9);
+  }
+  .tile {
+    position: relative; width: var(--tw); height: var(--th);
+    perspective: calc(var(--th) * 4);
+    font-family: Oswald, "Arial Narrow", sans-serif; font-weight: 600;
+    font-size: calc(var(--th) * .66); color: var(--glyph);
+  }
+  .half, .flap {
+    position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
+    background: linear-gradient(180deg, var(--tile-2), var(--tile));
+  }
+  .half.top, .flap.ftop { top: 0; border-radius: 3px 3px 0 0; }
+  .half.bottom, .flap.fbot { bottom: 0; border-radius: 0 0 3px 3px; background: linear-gradient(180deg, #1f1a17, #15110f); }
+  .half span, .flap span {
+    position: absolute; left: 0; right: 0; height: var(--th); line-height: var(--th);
+    text-align: center; display: block;
+  }
+  .half.top span, .flap.ftop span { top: 0; }
+  .half.bottom span, .flap.fbot span { bottom: 0; }
+  .tile::after { /* hinge line */
+    content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px;
+    background: #050403; z-index: 5; box-shadow: 0 1px 0 rgba(255,255,255,.04);
+  }
+  .flap { z-index: 3; visibility: hidden; backface-visibility: hidden; }
+  .flap.ftop { transform-origin: 50% 100%; }
+  .flap.fbot { transform-origin: 50% 0; transform: rotateX(90deg); }
+  .tile.flip .flap { visibility: visible; }
+  .tile.flip .ftop { animation: ftop var(--sd) ease-in forwards; }
+  .tile.flip .fbot { animation: fbot var(--sd) ease-out forwards; animation-delay: var(--sd); }
+  @keyframes ftop { from { transform: rotateX(0); filter: brightness(1); } to { transform: rotateX(-90deg); filter: brightness(.55); } }
+  @keyframes fbot { from { transform: rotateX(90deg); filter: brightness(1.5); } to { transform: rotateX(0); filter: brightness(1); } }
+
+  /* colour chips */
+  span.c-r { background: #d23a22; } span.c-o { background: #ee7f22; } span.c-y { background: #e8b52b; }
+  span.c-g { background: #6f8f2a; } span.c-b { background: #2c6f8c; } span.c-v { background: #7b3f74; }
+  span.c-w { background: #efe3c8; } span.c-n { background: #6b3e1f; }
+  .half span[class^="c-"], .flap span[class^="c-"] { left: 2px; right: 2px; }
+
+  /* ---------- Controls ---------- */
+  .panel {
+    margin: 52px auto 0; max-width: 1100px;
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px;
+  }
+  .card {
+    background: var(--cream); color: var(--ink); border-radius: 20px; padding: 22px;
+    box-shadow: 0 14px 30px rgba(0,0,0,.35), inset 0 -4px 0 rgba(0,0,0,.08);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+    background: linear-gradient(90deg, var(--mustard) 0 25%, var(--orange) 25% 50%, var(--rust) 50% 75%, var(--brown-2) 75%);
+  }
+  .card h2 { font-family: Shrikhand, serif; font-weight: 400; font-size: 26px; margin: 6px 0 12px; color: var(--rust); }
+  textarea {
+    width: 100%; min-height: 128px; resize: vertical; border-radius: 12px; border: 3px solid var(--brown-2);
+    background: #fffaf0; color: var(--ink); padding: 12px 14px; font-family: Oswald, sans-serif; font-size: 20px;
+    letter-spacing: .06em; text-transform: uppercase; line-height: 1.35;
+  }
+  textarea:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 4px rgba(232,130,42,.25); }
+  .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #6b4a2e; margin: 8px 2px 12px; }
+  .meta b { color: var(--rust); }
+  .colors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .colors span.l { font-size: 13px; color: #6b4a2e; margin-right: 4px; }
+  .sw { width: 28px; height: 28px; border-radius: 6px; border: 2px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    font-family: Righteous, sans-serif; font-size: 15px; letter-spacing: .04em;
+    padding: 11px 20px; border-radius: 999px; cursor: pointer; border: 0;
+    background: var(--brown-2); color: var(--cream);
+    box-shadow: 0 4px 0 #2a170b; transition: transform .06s, box-shadow .06s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #2a170b; }
+  .btn.pri { background: var(--orange); color: #2a1206; box-shadow: 0 4px 0 #9a4a10; }
+  .btn.mus { background: var(--mustard); color: #2a1206; box-shadow: 0 4px 0 #8f6812; }
+  .btn.sm { padding: 7px 13px; font-size: 13px; }
+
+  .list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 330px; overflow: auto; }
+  .list li {
+    display: flex; gap: 8px; align-items: center; background: #fffaf0; border: 2px solid var(--cream-2);
+    border-radius: 12px; padding: 8px 8px 8px 12px;
+  }
+  .list li.cur { border-color: var(--orange); background: #fff1dc; }
+  .list .txt { flex: 1; min-width: 0; font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: .05em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .ic { border: 0; background: var(--cream-2); color: var(--ink); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; flex: none; }
+  .ic:hover { background: var(--mustard); }
+  .ic.del:hover { background: var(--rust); color: #fff; }
+  .opts { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center; font-size: 14px; }
+  .opts label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .opts input[type="number"] { width: 64px; padding: 6px 8px; border-radius: 8px; border: 2px solid var(--brown-2); background: #fffaf0; font: inherit; }
+  .opts input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--rust); }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 2px dashed var(--cream-2); }
+  .presets .l { width: 100%; font-size: 13px; color: #6b4a2e; }
+
+  footer { text-align: center; color: var(--cream-2); opacity: .7; font-size: 13px; padding: 18px 16px 24px; font-family: Righteous, sans-serif; letter-spacing: .1em; }
+
+  @media (max-width: 900px) { .panel { grid-template-columns: 1fr; } }
+
+  /* ---------- screensaver mode (?ss) ---------- */
+  body.ss { display: flex; flex-direction: column; height: 100vh; overflow: hidden; cursor: none; }
+  body.ss * { cursor: none !important; }
+  body.ss nav, body.ss .tag, body.ss .panel, body.ss footer { display: none; }
+  body.ss .stripes.bottom { margin-top: 0; }
+  body.ss h1 { margin-top: 3vh; font-size: clamp(36px, 6.5vh, 100px); pointer-events: none; }
+  body.ss main { flex: 1; display: flex; align-items: center; justify-content: center; max-width: none; padding: 2vh 16px 4vh; }
+</style>
+</head>
+<body>
+<div class="stripes"></div>
+<nav>
+  <a href="index.html">Zeitmaschine</a>
+  <a href="flipboard.html" class="on">Flipboard</a>
+</nav>
+<h1 id="title"><span class="ln" contenteditable="true" spellcheck="false" title="Klicken zum Bearbeiten (Enter = nächste Zeile)">Groovy</span><span class="ln" contenteditable="true" spellcheck="false" title="Klicken zum Bearbeiten">Board</span></h1>
+<p class="tag">Klack · Klack · Klack — deine Nachrichten wie am Flughafen 1974</p>
+
+<main>
+  <div class="housing">
+    <div class="board" id="board"></div>
+    <div class="badge">SPLIT · FLAP · 22 × 6</div>
+  </div>
+
+  <section class="panel">
+    <div class="card">
+      <h2>Was soll drauf?</h2>
+      <div class="title-row">
+        <label for="titleIn">Überschrift:</label>
+        <input id="titleIn" maxlength="30" placeholder="Zeile 1" aria-label="Überschrift Zeile 1">
+        <input id="titleIn2" maxlength="30" placeholder="Zeile 2 (optional)" aria-label="Überschrift Zeile 2">
+        <button class="btn sm" id="titleReset" title="Standard-Titel">↺</button>
+      </div>
+      <textarea id="msg" maxlength="300" placeholder="Schreib was Schönes …&#10;Zeilenumbruch mit Enter"></textarea>
+      <div class="meta"><span>Max. 6 Zeilen à 22 Zeichen · wird automatisch umgebrochen</span><span id="fit"><b>0</b> / 6 Zeilen</span></div>
+      <div class="colors">
+        <span class="l">Farbkachel einfügen:</span>
+        <button class="sw" data-c="r" style="background:#d23a22" title="Rot"></button>
+        <button class="sw" data-c="o" style="background:#ee7f22" title="Orange"></button>
+        <button class="sw" data-c="y" style="background:#e8b52b" title="Gelb"></button>
+        <button class="sw" data-c="g" style="background:#6f8f2a" title="Grün"></button>
+        <button class="sw" data-c="b" style="background:#2c6f8c" title="Blau"></button>
+        <button class="sw" data-c="v" style="background:#7b3f74" title="Violett"></button>
+        <button class="sw" data-c="n" style="background:#6b3e1f" title="Braun"></button>
+        <button class="sw" data-c="w" style="background:#efe3c8" title="Creme"></button>
+      </div>
+      <div class="btns">
+        <button class="btn pri" id="show">▶ Jetzt anzeigen</button>
+        <button class="btn mus" id="add">＋ Zur Playlist</button>
+        <button class="btn" id="clear">Board leeren</button>
+      </div>
+      <div class="presets" id="presets"><span class="l">Vorlagen:</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Playlist</h2>
+      <ul class="list" id="list"></ul>
+      <div class="opts">
+        <label><input type="checkbox" id="auto" checked> Automatisch wechseln</label>
+        <label>alle <input type="number" id="secs" min="5" max="600" value="15"> Sek.</label>
+        <label><input type="checkbox" id="sound" checked> Klack-Geräusch</label>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="stripes bottom"></div>
+<footer>Far out! · Gespeichert wird nur in deinem Browser</footer>
+
+<script>
+(() => {
+  const COLS = 22, ROWS = 6, STEP = 55;
+  const COLORS = ["r","o","y","g","b","v","n","w"].map(c => `{${c}}`);
+  const CHARS = [" ", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", ..."0123456789", ..."!?.,:;-+/&'\"()#%=@°€$", ...COLORS];
+  const IDX = new Map(CHARS.map((c, i) => [c, i]));
+
+  const DEFAULT_LIST = [
+    "{o}{y} WILLKOMMEN {y}{o}\nIM GROOVY BOARD\n\nPEACE & LOVE",
+    "FLUG    ZIEL      GATE\nLH 1955 HILLVALLEY  88\nAF 1985 PARIS       12\nBA 2015 LONDON      07",
+    "HEUTE ABEND\nFONDUE & DISCO\n20:00 UHR",
+    "{r}{o}{y}{g}{b}{v}\nKEEP ON\nTRUCKIN'\n{v}{b}{g}{y}{o}{r}",
+  ];
+  const PRESETS = [
+    ["Abflüge", "FLUG    ZIEL      GATE\nLH 1955 HILLVALLEY  88\nAF 1985 PARIS       12\nBA 2015 LONDON      07\nIB 1977 MADRID      03"],
+    ["Uhrzeit", "@CLOCK"],
+    ["Geburtstag", "{r}{o}{y}{g}{b}{v}{r}{o}{y}{g}{b}\nHAPPY BIRTHDAY!\nALLES GUTE\n{b}{g}{y}{o}{r}{v}{b}{g}{y}{o}{r}"],
+    ["Regenbogen", "{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}{r}\n{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}{o}\n{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}{y}\n{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}{g}\n{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}{b}\n{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}{v}"],
+    ["Bin weg", "BIN GLEICH ZURÜCK\n\nNICHT STÖREN!"],
+  ];
+
+  // ---------- storage ----------
+  const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } };
+  const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  let list = load("fb-list", DEFAULT_LIST);
+  let opts = load("fb-opts", { auto: true, secs: 15, sound: true });
+  let cur = 0;
+
+  // ---------- board ----------
+  const boardEl = document.getElementById("board");
+  const tiles = [];
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const t = document.createElement("div");
+    t.className = "tile";
+    t.innerHTML = '<div class="half top"><span></span></div><div class="half bottom"><span></span></div><div class="flap ftop"><span></span></div><div class="flap fbot"><span></span></div>';
+    const [top, bot, ft, fb] = t.querySelectorAll("span");
+    boardEl.appendChild(t);
+    tiles.push({ el: t, top, bot, ft, fb, cur: 0, target: 0, timer: null });
+  }
+  const paint = (span, i) => {
+    const c = CHARS[i];
+    if (c.length > 1) { span.textContent = ""; span.className = "c-" + c[1]; }
+    else { span.textContent = c; span.className = ""; }
+  };
+  tiles.forEach(t => [t.top, t.bot, t.ft, t.fb].forEach(s => paint(s, 0)));
+
+  function size() {
+    const ss = document.body.classList.contains("ss");
+    const avail = (ss ? innerWidth * .94 : Math.min(innerWidth - 32, 1240)) - 2 * Math.max(10, Math.min(28, innerWidth * .022)) - 16;
+    const gap = innerWidth < 600 ? 2 : 4;
+    let tw = Math.max(11, Math.min(ss ? 120 : 50, Math.floor((avail - gap * 23) / COLS)));
+    if (ss) {
+      // leave room for the (possibly two-line) title and the bottom stripes
+      const titleBottom = document.getElementById("title").getBoundingClientRect().bottom;
+      const maxH = innerHeight - titleBottom - 54 - 90;
+      tw = Math.min(tw, Math.floor(maxH / (ROWS * 1.42 + ROWS * .12)));
+    }
+    boardEl.style.setProperty("--tw", tw + "px");
+    boardEl.style.setProperty("--th", Math.round(tw * 1.42) + "px");
+    boardEl.style.setProperty("--gap", gap + "px");
+    boardEl.style.setProperty("--sd", (STEP / 2) + "ms");
+  }
+  size(); addEventListener("resize", size);
+
+  // ---------- sound ----------
+  let AC = null, noise = null, lastClick = 0;
+  function ac() {
+    if (!AC) {
+      try {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        const len = Math.floor(AC.sampleRate * .02);
+        noise = AC.createBuffer(1, len, AC.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+      } catch (e) { AC = null; }
+    }
+    if (AC && AC.state === "suspended") AC.resume();
+    return AC;
+  }
+  // --- recorded clatter (sounds/flipboard-klack.m4a, 14 s cut from the video) ---
+  const LOOP_A = 0.2, LOOP_B = 13.8;           // loop range inside the audio file (seconds)
+  const clack = new Audio("sounds/flipboard-klack.m4a");
+  clack.preload = "auto"; clack.volume = 0;
+  let sampleOk = true, unlocked = false, vol = 0;
+  clack.addEventListener("error", () => { sampleOk = false; });
+  clack.addEventListener("timeupdate", () => { if (clack.currentTime > LOOP_B) clack.currentTime = LOOP_A; });
+  clack.addEventListener("ended", () => { clack.currentTime = LOOP_A; if (vol > .01) clack.play().catch(() => {}); });
+  function unlock() {
+    if (unlocked || !sampleOk) return;
+    // first user gesture: start + pause once so later play() calls are allowed
+    clack.play().then(() => { unlocked = true; if (vol < .01) clack.pause(); }).catch(() => {});
+  }
+  setInterval(() => {
+    if (!sampleOk) return;
+    const active = tiles.reduce((n, t) => n + (t.timer ? 1 : 0), 0);
+    const target = opts.sound && active ? Math.min(1, .35 + active / 70) : 0;
+    vol += (target - vol) * (target > vol ? .5 : .18);   // quick attack, soft release
+    if (vol < .01) vol = 0;
+    clack.volume = Math.max(0, Math.min(1, vol));
+    if (vol > 0 && clack.paused) {
+      if (clack.currentTime < LOOP_A || clack.currentTime > LOOP_B - 2) clack.currentTime = LOOP_A + Math.random() * (LOOP_B - LOOP_A - 3);
+      clack.play().catch(() => {});
+    } else if (vol === 0 && !clack.paused) clack.pause();
+  }, 50);
+
+  function click() {
+    if (sampleOk) return;                         // recorded sound handles it
+    if (!opts.sound || !AC || AC.state !== "running") return;
+    const now = performance.now();
+    if (now - lastClick < 14) return;
+    lastClick = now;
+    const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = noise; f.type = "bandpass"; f.frequency.value = 2200 + Math.random() * 1800; f.Q.value = 1.2;
+    g.gain.value = .25 + Math.random() * .15;
+    s.connect(f).connect(g).connect(AC.destination); s.start();
+  }
+  ["pointerdown", "keydown"].forEach(ev => addEventListener(ev, () => { ac(); unlock(); }, { once: false, passive: true }));
+
+  // ---------- flipping ----------
+  function stepTile(t) {
+    if (t.cur === t.target) { t.timer = null; return; }
+    const next = (t.cur + 1) % CHARS.length;
+    paint(t.top, next); paint(t.bot, t.cur); paint(t.ft, t.cur); paint(t.fb, next);
+    t.el.classList.remove("flip"); void t.el.offsetWidth; t.el.classList.add("flip");
+    click();
+    t.timer = setTimeout(() => {
+      paint(t.bot, next);
+      t.cur = next;
+      if (t.cur === t.target) { t.el.classList.remove("flip"); t.timer = null; }
+      else stepTile(t);
+    }, STEP);
+  }
+  function setBoard(cells) {
+    tiles.forEach((t, i) => {
+      t.target = cells[i] ?? 0;
+      if (t.timer || t.cur === t.target) return;
+      const r = Math.floor(i / COLS), c = i % COLS;
+      t.timer = setTimeout(() => stepTile(t), c * 18 + r * 40 + Math.random() * 60);
+    });
+  }
+
+  // ---------- text layout ----------
+  function tokenize(line) {
+    const out = [];
+    const re = /\{[roygbvnw]\}|./giu;
+    let m;
+    line = line.replace(/ß/g, "SS");
+    while ((m = re.exec(line))) {
+      let tk = m[0];
+      if (tk.length === 3) tk = tk.toLowerCase();
+      else tk = tk.toUpperCase();
+      if (!IDX.has(tk)) tk = tk.normalize("NFD").replace(/[̀-ͯ]/g, "");
+      out.push(IDX.has(tk) ? tk : (tk.trim() ? "?" : " "));
+    }
+    return out;
+  }
+  function wrap(text) {
+    const lines = [];
+    text.split("\n").forEach(par => {
+      const toks = tokenize(par);
+      if (!toks.length) { lines.push([]); return; }
+      // split into words keeping colour tokens as word chars
+      const words = []; let w = [];
+      toks.forEach(t => { if (t === " ") { if (w.length) words.push(w); w = []; } else w.push(t); });
+      if (w.length) words.push(w);
+      // preserve explicit multi-space layouts (tables): if paragraph has 2+ spaces in a row, keep raw
+      if (/ {2,}/.test(par) && toks.length <= COLS) { lines.push(toks); return; }
+      let line = [];
+      words.forEach(word => {
+        while (word.length > COLS) { if (line.length) { lines.push(line); line = []; } lines.push(word.slice(0, COLS)); word = word.slice(COLS); }
+        if (!line.length) line = [...word];
+        else if (line.length + 1 + word.length <= COLS) line.push(" ", ...word);
+        else { lines.push(line); line = [...word]; }
+      });
+      if (line.length) lines.push(line);
+    });
+    return lines;
+  }
+  function layout(text) {
+    let lines = wrap(text);
+    // trim empty leading/trailing
+    while (lines.length && !lines[0].length) lines.shift();
+    while (lines.length && !lines[lines.length - 1].length) lines.pop();
+    const n = lines.length;
+    lines = lines.slice(0, ROWS);
+    const cells = new Array(COLS * ROWS).fill(0);
+    const top = Math.floor((ROWS - lines.length) / 2);
+    const tabular = text.split("\n").some(p => / {2,}/.test(p));
+    lines.forEach((ln, r) => {
+      const left = tabular ? 0 : Math.floor((COLS - ln.length) / 2);
+      ln.forEach((tk, c) => { cells[(top + r) * COLS + left + c] = IDX.get(tk) ?? 0; });
+    });
+    return { cells, n };
+  }
+  const expand = text => {
+    if (text !== "@CLOCK") return text;
+    const d = new Date();
+    const days = ["SONNTAG","MONTAG","DIENSTAG","MITTWOCH","DONNERSTAG","FREITAG","SAMSTAG"];
+    const p = n => String(n).padStart(2, "0");
+    return `{o}{y} ES IST {y}{o}\n\n${p(d.getHours())}:${p(d.getMinutes())} UHR\n${days[d.getDay()]}\n${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`;
+  };
+  const show = text => setBoard(layout(expand(text)).cells);
+
+  // ---------- UI ----------
+  const msg = document.getElementById("msg"), fit = document.getElementById("fit");
+  const listEl = document.getElementById("list");
+  const updFit = () => {
+    const n = layout(expand(msg.value)).n;
+    fit.innerHTML = `<b style="color:${n > ROWS ? "#c8501e" : ""}">${n}</b> / ${ROWS} Zeilen${n > ROWS ? " – zu lang!" : ""}`;
+  };
+  msg.addEventListener("input", updFit);
+
+  document.querySelectorAll(".sw").forEach(b => b.addEventListener("click", () => {
+    const s = msg.selectionStart, e = msg.selectionEnd, code = `{${b.dataset.c}}`;
+    msg.value = msg.value.slice(0, s) + code + msg.value.slice(e);
+    msg.focus(); msg.selectionStart = msg.selectionEnd = s + code.length; updFit();
+  }));
+
+  const label = t => t === "@CLOCK" ? "🕒 AKTUELLE UHRZEIT" : t.replace(/\{[a-z]\}/gi, "■").replace(/\n/g, " · ");
+  function renderList() {
+    listEl.innerHTML = "";
+    if (!list.length) { listEl.innerHTML = '<li><span class="txt" style="opacity:.6">Noch leer – füge Nachrichten hinzu</span></li>'; return; }
+    list.forEach((t, i) => {
+      const li = document.createElement("li");
+      if (i === cur) li.className = "cur";
+      li.innerHTML = `<span class="txt"></span>
+        <button class="ic" title="Anzeigen">▶</button>
+        <button class="ic" title="Bearbeiten">✎</button>
+        <button class="ic" title="Nach oben">↑</button>
+        <button class="ic del" title="Löschen">✕</button>`;
+      li.querySelector(".txt").textContent = label(t);
+      const [bShow, bEdit, bUp, bDel] = li.querySelectorAll("button");
+      bShow.onclick = () => { cur = i; show(t); renderList(); restart(); };
+      bEdit.onclick = () => { msg.value = t; updFit(); msg.focus(); };
+      bUp.onclick = () => { if (i > 0) { [list[i-1], list[i]] = [list[i], list[i-1]]; store("fb-list", list); renderList(); } };
+      bDel.onclick = () => { list.splice(i, 1); if (cur >= list.length) cur = 0; store("fb-list", list); renderList(); };
+      listEl.appendChild(li);
+    });
+  }
+
+  document.getElementById("show").onclick = () => { if (msg.value.trim()) { show(msg.value); stopTimer(); } };
+  document.getElementById("add").onclick = () => {
+    if (!msg.value.trim()) return;
+    list.push(msg.value); store("fb-list", list); cur = list.length - 1;
+    show(msg.value); msg.value = ""; updFit(); renderList(); restart();
+  };
+  document.getElementById("clear").onclick = () => { setBoard(new Array(COLS * ROWS).fill(0)); stopTimer(); };
+
+  const presetsEl = document.getElementById("presets");
+  PRESETS.forEach(([n, t]) => {
+    const b = document.createElement("button");
+    b.className = "btn sm"; b.textContent = n;
+    b.onclick = () => { msg.value = t; updFit(); show(t); stopTimer(); };
+    presetsEl.appendChild(b);
+  });
+
+  // ---------- playlist timer ----------
+  const auto = document.getElementById("auto"), secs = document.getElementById("secs"), sound = document.getElementById("sound");
+  auto.checked = opts.auto; secs.value = opts.secs; sound.checked = opts.sound;
+  let timer = null;
+  function stopTimer() { clearInterval(timer); timer = null; }
+  function restart() {
+    stopTimer();
+    if (!opts.auto || list.length === 0) return;
+    timer = setInterval(() => {
+      if (!list.length) return;
+      cur = (cur + 1) % list.length;
+      show(list[cur]); renderList();
+    }, Math.max(5, opts.secs) * 1000);
+  }
+  const muteNow = () => { if (!opts.sound) { vol = 0; clack.volume = 0; clack.pause(); } };
+  const saveOpts = () => { opts = { auto: auto.checked, secs: Math.max(5, +secs.value || 15), sound: sound.checked }; store("fb-opts", opts); muteNow(); restart(); };
+  [auto, secs, sound].forEach(el => el.addEventListener("change", saveOpts));
+  // keep other open flipboard windows/tabs in sync (e.g. sound switched off elsewhere)
+  addEventListener("storage", e => {
+    if (e.key !== "fb-opts" || document.body.classList.contains("ss")) return;
+    const o = load("fb-opts", opts);
+    opts = o; auto.checked = o.auto; secs.value = o.secs; sound.checked = o.sound;
+    muteNow(); restart();
+  });
+
+  // ---------- editable two-line title ----------
+  const DEF_TITLE = ["Groovy", "Board"];
+  const titleEl = document.getElementById("title");
+  const lineEls = [...titleEl.querySelectorAll(".ln")];
+  const inEls = [document.getElementById("titleIn"), document.getElementById("titleIn2")];
+  const clean = s => (s || "").replace(/\s+/g, " ").slice(0, 30);
+  function setTitle(arr, from) {
+    arr = [clean(arr[0]), clean(arr[1])];
+    let shown = arr.map(s => s.trim());
+    if (!shown[0] && !shown[1]) shown = DEF_TITLE.slice();
+    if (from !== "h1") lineEls.forEach((el, i) => { el.textContent = shown[i] || ""; });
+    if (from !== "input") inEls.forEach((el, i) => { el.value = arr[i].trim(); });
+    document.title = shown.filter(Boolean).join(" ");
+    return shown;
+  }
+  const applyTitle = (arr, from) => store("fb-title", setTitle(arr, from).join("\n"));
+  // older versions stored a one-line title; the old default becomes the new two-line default
+  let storedTitle = load("fb-title", DEF_TITLE.join("\n"));
+  if (storedTitle === "Groovy Board") storedTitle = DEF_TITLE.join("\n");
+  setTitle(String(storedTitle).split("\n"));
+
+  inEls.forEach(el => el.addEventListener("input", () => applyTitle(inEls.map(i => i.value), "input")));
+  lineEls.forEach((el, i) => {
+    el.addEventListener("input", () => applyTitle(lineEls.map(l => l.textContent), "h1"));
+    el.addEventListener("blur", () => setTimeout(() => {
+      if (!lineEls.includes(document.activeElement)) applyTitle(lineEls.map(l => l.textContent));
+    }, 0));
+    el.addEventListener("keydown", e => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const next = lineEls[i + 1];
+      if (next && next.textContent) {               // jump to line 2, caret at the end
+        next.focus();
+        const r = document.createRange(); r.selectNodeContents(next); r.collapse(false);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      } else el.blur();
+    });
+    el.addEventListener("paste", e => { e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData.getData("text") || "").replace(/\s+/g, " ")); });
+  });
+  document.getElementById("titleReset").onclick = () => applyTitle(DEF_TITLE);
+
+  // ---------- screensaver mode ----------
+  // flipboard.html?ss=1&secs=15&sound=1  → no controls, full screen, texts from flipboard-texte.txt
+  function parseTxt(s) {
+    let title = null, buf = [];
+    const msgs = [];
+    const flush = () => { if (buf.join("").trim()) msgs.push(buf.join("\n")); buf = []; };
+    s.replace(/\r/g, "").split("\n").forEach(l => {
+      if (/^\s*\/\//.test(l)) return;                         // comment line
+      const m = l.match(/^\s*TITEL\s*:\s*(.*)$/i);
+      if (m) { title = m[1].trim(); return; }
+      if (/^\s*-{3,}\s*$/.test(l)) flush(); else buf.push(l);
+    });
+    flush();
+    return { title, msgs: msgs.map(t => t.replace(/^\n+|\n+$/g, "")) };
+  }
+  async function start() {
+    const params = new URLSearchParams(location.search);
+    if (params.has("ss")) {
+      document.body.classList.add("ss");
+      opts = { auto: true, secs: Math.max(5, +params.get("secs") || 15), sound: params.get("sound") !== "0" };
+      try {
+        const r = await fetch("flipboard-texte.txt", { cache: "no-store" });
+        if (r.ok) {
+          const p = parseTxt(await r.text());
+          if (p.msgs.length) list = p.msgs;
+          if (p.title) setTitle(p.title.split("|"));   // "Zeile 1 | Zeile 2"
+        }
+      } catch (e) { /* keep stored playlist */ }
+      size();
+      if (document.fonts) document.fonts.ready.then(size);
+    }
+    renderList(); updFit();
+    setTimeout(() => { if (list.length) show(list[0]); restart(); }, 400);
+  }
+  start();
+})();
+</script>
+</body>
+</html>

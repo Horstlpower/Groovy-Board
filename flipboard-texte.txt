@@ -1,0 +1,40 @@
+// =====================================================================
+//  Texte für den Flipboard-Bildschirmschoner
+// ---------------------------------------------------------------------
+//  - Zeilen, die mit // beginnen, sind Kommentare und werden ignoriert.
+//  - TITEL: legt die große Überschrift fest. Mit | trennst du die
+//           zwei Zeilen, z. B.  TITEL: Groovy | Board
+//  - Jede Nachricht wird durch eine Zeile mit --- getrennt.
+//  - Max. 6 Zeilen à 22 Zeichen pro Nachricht (wird automatisch umgebrochen).
+//  - Farbkacheln: {r} rot  {o} orange  {y} gelb  {g} grün
+//                 {b} blau {v} violett {n} braun   {w} creme
+//  - @CLOCK allein in einer Nachricht zeigt die aktuelle Uhrzeit.
+//  - Mehrere Leerzeichen hintereinander = Tabelle (linksbündig).
+// =====================================================================
+
+TITEL: Groovy | Board
+
+{o}{y} WILLKOMMEN {y}{o}
+IM GROOVY BOARD
+
+LET'S WORK
+---
+@CLOCK
+---
+FLUG    ZIEL      GATE
+LH 1955 HILLVALLEY  88
+AF 1985 PARIS       12
+BA 2015 LONDON      07
+IB 1977 MADRID      03
+---
+{r}{o}{y}{g}{b}{v}
+KEEP ON
+TRUCKIN'
+{v}{b}{g}{y}{o}{r}
+---
+HEUTE ABEND
+FONDUE & DISCO
+20:00 UHR
+---
+STOPP WORKING
+@CLOCK

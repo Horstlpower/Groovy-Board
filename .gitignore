@@ -1,0 +1,14 @@
+# private screen recordings (the clatter sound is already in sounds/)
+*.mp4
+
+# build output of the screensaver source
+screensaver-src/bin/
+screensaver-src/obj/
+
+# local tool settings
+.claude/
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.vs/

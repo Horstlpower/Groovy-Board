@@ -2,6 +2,8 @@
 
 Zwei kleine Retro-Webseiten – ohne Server, einfach die HTML-Datei im Browser öffnen – plus ein Windows-Bildschirmschoner, der beide Seiten zeigt.
 
+**▶ Live ausprobieren:** [Zeitmaschine](https://horstlpower.github.io/Groovy-Board/) · [Groovy Board](https://horstlpower.github.io/Groovy-Board/flipboard.html)
+
 ## 🕰️ Zeitmaschine – `index.html`
 Zeitanzeige im Stil der berühmten Film-Zeitmaschine mit Siebensegment-Ziffern.
 
